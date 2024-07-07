@@ -240,34 +240,67 @@ int main(int argc, char **argv)
 
     int search_k = 10;
     int ef_search = 250;
+    vector<int> ef_search_values = {25, 50, 75, 100, 125, 150, 200, 250, 300, 350, 400, 500};
 
-    vector<vector<pair<int, float>>> result(query_num);
-    auto a = std::chrono::high_resolution_clock::now();
-    int act = 0;
-    for (int i = 0; i < result.size(); i++)
-    {
-        act += index.SearchByVector_new(query_load[i], attributes_query[i], search_k, ef_search, result[i]);
-    }
-    auto b = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> s_diff = b - a;
-    //评估
-    int cnt = 0;
-    for (unsigned i = 0; i < ground_num; i++)
-    {
-        for (unsigned j = 0; j < search_k; j++)
-        {
-            unsigned k = 0;
-            for (; k < search_k; k++)
-            {
-                if (result[i][j].first == ground_load[i * ground_dim + k])
-                    break;
-            }
-            if (k == search_k)
-                cnt++;
+    auto evaluate_search = [&] (int ef_search) -> pair<double, float> {
+        vector<vector<pair<int, float>>> result(query_num);
+        auto start = std::chrono::high_resolution_clock::now();
+        int act = 0;
+        for (int i = 0; i < result.size(); i++) {
+            act += index.SearchByVector_new(query_load[i], attributes_query[i], search_k, ef_search, result[i]);
         }
-    }
-    float acc = 1 - (float)cnt / (ground_num * search_k);
-    std::cerr << "Search Time: " << s_diff.count() << " " << search_k << "NN accuracy: " << acc << " Distcount: " << act << std::endl;
+        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> search_time = end - start;
 
-    peak_memory_footprint();
+        // 评估
+        int cnt = 0;
+        for (unsigned i = 0; i < ground_num; i++) {
+            for (unsigned j = 0; j < search_k; j++) {
+                unsigned k = 0;
+                for (; k < search_k; k++) {
+                    if (result[i][j].first == ground_load[i * ground_dim + k])
+                        break;
+                }
+                if (k == search_k)
+                    cnt++;
+            }
+        }
+        float acc = 1 - static_cast<float>(cnt) / (ground_num * search_k);
+        return {search_time.count(), acc};
+    };
+    for (int ef_search : ef_search_values) {
+        auto [search_time, accuracy] = evaluate_search(ef_search);
+        std::cerr << "ef_search: " << ef_search << " QPS: " << 1 / search_time << " " << search_k << "NN accuracy: " << accuracy << std::endl;
+    }
+
+    // vector<vector<pair<int, float>>> result(query_num);
+    // auto a = std::chrono::high_resolution_clock::now();
+    // int act = 0;
+    // for (int i = 0; i < result.size(); i++)
+    // {
+    //     act += index.SearchByVector_new(query_load[i], attributes_query[i], search_k, ef_search, result[i]);
+    // }
+    // auto b = std::chrono::high_resolution_clock::now();
+    // std::chrono::duration<double> s_diff = b - a;
+    // //评估
+    // int cnt = 0;
+    // for (unsigned i = 0; i < ground_num; i++)
+    // {
+    //     for (unsigned j = 0; j < search_k; j++)
+    //     {
+    //         unsigned k = 0;
+    //         for (; k < search_k; k++)
+    //         {
+    //             if (result[i][j].first == ground_load[i * ground_dim + k])
+    //                 break;
+    //         }
+    //         if (k == search_k)
+    //             cnt++;
+    //     }
+    // }
+    // float acc = 1 - (float)cnt / (ground_num * search_k);
+    // std::cerr << "Search Time: " << s_diff.count() << " " << search_k << "NN accuracy: " << acc << " Distcount: " << act << std::endl;
+
+    // TODO: it should be moved into lambda
+    // peak_memory_footprint();
 }

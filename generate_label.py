@@ -22,6 +22,7 @@ def generate_label_sift_txt(num_lines, filename, dimensions):
 ####################################################################
 
 def read_fvecs(file_path):
+    vectors = []
     with open(file_path, 'rb') as f:
         while True:
             dim_bytes = f.read(4)
@@ -29,7 +30,8 @@ def read_fvecs(file_path):
                 break
             dim = np.frombuffer(dim_bytes, dtype=np.int32)[0]
             vector = np.frombuffer(f.read(4 * dim), dtype=np.float32)
-            yield vector
+            vectors.append(vector)
+    return np.array(vectors)
 
 def write_ivecs(file_path, data):
     with open(file_path, "wb") as f:
@@ -51,10 +53,12 @@ def generate_ground_truth(base_vectors, query_vectors, base_labels, query_labels
         print (i / query_number)
         
         distances = []
+        idx = 0
         for base_vector, base_label in zip(base_vectors, base_labels):
             if query_label == base_label:  # Check if labels match
                 dist = np.linalg.norm(base_vector - query_vector)
-                distances.append((dist, base_vector))
+                distances.append((dist, idx))
+            idx = idx + 1
         distances.sort(key=lambda x: x[0])
         nearest_indices = [idx for _, idx in distances[:k]]  # Get the indices of the k nearest neighbors
         ground_truth.append(nearest_indices)
@@ -62,7 +66,7 @@ def generate_ground_truth(base_vectors, query_vectors, base_labels, query_labels
 
 ####################################################################
 
-cardinalities = [3]
+cardinalities = [10, 100, 1000, 3]
 
 # we need to generate three files: 
 # label_sift_base.txt / label_sift_query.txt
@@ -87,8 +91,8 @@ for cardinality in cardinalities:
     vector_query_file = "/home/qinghao/datasets/sift-161m/sift/sift_query.fvecs"
  
     # Read vectors
-    base_vectors = np.array(list(read_fvecs(vector_base_file)))
-    query_vectors = np.array(list(read_fvecs(vector_query_file)))
+    base_vectors = read_fvecs(vector_base_file)
+    query_vectors = read_fvecs(vector_query_file)
     # Load labels
     base_labels = load_labels(os.path.expanduser(f"~/datasets/sift-161m/sift_label/{base_file_name}"))
     query_labels = load_labels(os.path.expanduser(f"~/datasets/sift-161m/sift_label/{query_file_name}"))

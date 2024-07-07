@@ -36,15 +36,15 @@ def read_fvecs(file_path):
             data.append(vector)
         return np.array(data)
 
-# label_sift_groundtruth = '/home/qinghao/datasets/sift-161m/sift_label/label_sift_groundtruth3.ivecs'
-# data = read_ivecs(label_sift_groundtruth)
+label_sift_groundtruth = '/home/qinghao/datasets/sift-161m/sift_label/label_sift_groundtruth3.ivecs'
+data = read_ivecs(label_sift_groundtruth)
 # print("ground_truth", data)
 
 
 # sift_base = '/home/qinghao/datasets/sift-161m/sift/sift_base.fvecs'
-# data = read_ivecs(sift_base)
+# data = read_fvecs(sift_base)
 # print("sift_base", data)
 
-sift_query = '/home/qinghao/datasets/sift-161m/sift/sift_query.fvecs'
-data = read_fvecs(sift_query)
+# sift_query = '/home/qinghao/datasets/sift-161m/sift/sift_query.fvecs'
+# data = read_fvecs(sift_query)
 
